@@ -4,7 +4,6 @@ test_deps = [
     'coverage',
     'pytest-cov',
     'pytest',
-    'mock;python_version<"3.3"'
 ]
 
 extras = {
