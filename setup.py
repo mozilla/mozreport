@@ -20,9 +20,12 @@ setup(
     packages=["mozreport"],
     include_package_data=True,
     install_requires=[
+        "appdirs",
         "attrs",
+        "cattrs",
         "click",
         "requests",
+        "toml"
     ],
     tests_require=test_deps,
     extras_require=extras,
