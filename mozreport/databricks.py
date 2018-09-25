@@ -16,11 +16,11 @@ class Client:
         self.config = config
 
         if session is None:
-            session = Session()
+            session = Session()  # pragma: no cover
         session.headers.update({"Authorization": f"Bearer {self.config.token}"})
         self._requests = session
 
-    def upload_file(self, file: IO[bytes], remote_path: str) -> dict:
+    def upload_file(self, file: IO[bytes], remote_path: str) -> None:
         url = urljoin(self.config.host, "/api/2.0/dbfs/put")
         response = self._requests.post(
             url,
@@ -31,8 +31,8 @@ class Client:
                 "contents": file,
             },
         )
-        response.raise_for_status()
-        return response.json()
+        if response.status_code != 200:
+            raise DatabricksException(response.text)
 
     def file_exists(self, remote_path: str) -> bool:
         url = urljoin(self.config.host, "/api/2.0/dbfs/get-status")
@@ -53,7 +53,8 @@ class Client:
             url,
             json={"path": remote_path, "recursive": recursive},
         )
-        response.raise_for_status()
+        if response.status_code != 200:
+            raise DatabricksException(response.text)
 
 
 class DatabricksException(Exception):

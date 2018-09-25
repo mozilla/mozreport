@@ -50,12 +50,29 @@ class TestDatabricks:
         client.upload_file(contents, "/my_file.txt")
         session.post.assert_called_once()
 
+        session.post.return_value.status_code = 500
+        with pytest.raises(databricks.DatabricksException):
+            client.upload_file(contents, "/my_file.txt")
+
     def test_file_exists(self, mocked_client):
         client, session = mocked_client
-        client.file_exists("/foo")
+        assert client.file_exists("/foo")
         session.get.assert_called_once()
+
+        session.get.return_value.status_code = 500
+        session.get.return_value.json.return_value = {"error_code": "invalid error code"}
+        with pytest.raises(databricks.DatabricksException):
+            client.file_exists("/foo")
+
+        session.get.return_value.status_code = 404
+        session.get.return_value.json.return_value = {"error_code": "RESOURCE_DOES_NOT_EXIST"}
+        assert not client.file_exists("/foo")
 
     def test_delete_file(self, mocked_client):
         client, session = mocked_client
         client.delete_file("/foo")
         session.post.assert_called_once()
+
+        session.post.return_value.status_code = 500
+        with pytest.raises(databricks.DatabricksException):
+            client.delete_file("/foo")
