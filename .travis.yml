@@ -17,6 +17,6 @@ addons:
 install:
   - pip install tox-travis codecov
 script:
-  - tox
+  - tox -- -m "not integration"
 after_success:
 - codecov

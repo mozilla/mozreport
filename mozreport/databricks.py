@@ -1,4 +1,3 @@
-from typing import Dict
 from typing.io import IO
 from urllib.parse import urljoin
 
@@ -6,17 +5,10 @@ import attr
 from requests import Session
 
 
-@attr.s(auto_attribs=True)
+@attr.s
 class DatabricksConfig:
     token: str = attr.ib()
-    host: str = "https://dbc-caf9527b-e073.cloud.databricks.com"
-
-    @classmethod
-    def from_dict(cls, d: Dict[str, str]) -> "DatabricksConfig":
-        return cls(**d)
-
-    def to_dict(self) -> Dict[str, str]:
-        return attr.as_dict(self)
+    host: str = attr.ib()
 
 
 class Client:

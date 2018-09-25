@@ -3,13 +3,15 @@ from io import BytesIO
 import pytest
 
 from mozreport import databricks
+from mozreport.cli import CliConfig
 
 
 @pytest.mark.integration
 class TestDatabricksIntegration:
     @pytest.fixture
     def conf(self):
-        return databricks.DatabricksConfig(token)
+        cliconfig = CliConfig.from_file()
+        return cliconfig.databricks
 
     @pytest.fixture
     def client(self, conf):
