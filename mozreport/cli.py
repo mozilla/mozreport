@@ -8,10 +8,13 @@ import cattr
 import click
 import toml
 
+from .databricks import DatabricksConfig
+
 
 @attr.s()
 class CliConfig:
     default_template: str = attr.ib()
+    databricks: DatabricksConfig = attr.ib()
     version: str = attr.ib(default="v1")
 
     valid_templates = ["rmarkdown"]
@@ -60,13 +63,34 @@ class CliConfig:
         elif isinstance(defaults, cls):
             defaults = cattr.unstructure(defaults)
 
+        defaults.setdefault("default_template", cls.valid_templates[0])
+        defaults.setdefault("databricks", {})
+        defaults["databricks"].setdefault("host", "https://dbc-caf9527b-e073.cloud.databricks.com")
+        defaults["databricks"].setdefault("token", None)
+
         args = {}
 
         args["default_template"] = click.prompt(
             "Default template",
-            default=defaults.get("default_template", cls.valid_templates[0]))
+            default=defaults["default_template"])
 
-        return cls(**args)
+        args["databricks"] = {
+            "host": click.prompt("Databricks URL", default=defaults["databricks"]["host"]),
+        }
+
+        if not defaults["databricks"]["token"]:
+            click.echo(
+                f"You can create a Databricks access token by navigating to "
+                f'{args["databricks"]["host"]}/#setting/account, selecting "Access Tokens", '
+                f'and "Generate New Token."'
+            )
+
+        args["databricks"]["token"] = click.prompt(
+                "Databricks token",
+                type=str,
+                default=defaults["databricks"]["token"])
+
+        return cattr.structure(args, cls)
 
 
 @click.group()

@@ -1,6 +1,8 @@
 from pathlib import Path
+import pytest
 
 from mozreport import cli
+from mozreport.databricks import DatabricksConfig
 
 
 class TestCli:
@@ -10,10 +12,11 @@ class TestCli:
         assert result.exit_code == 0
 
     def test_setup(self, runner, tmpdir):
+        input = "\n\n1234"
         result = runner.invoke(
             cli.cli,
             ["setup"],
-            input="\n",
+            input=input,
             env={"MOZREPORT_CONFIG": str(tmpdir)},
         )
         print(result.output)
@@ -22,24 +25,26 @@ class TestCli:
         result = runner.invoke(
             cli.cli,
             ["setup"],
-            input="\n",
+            input=input,
             env={"MOZREPORT_CONFIG": str(tmpdir)},
         )
         assert result.exit_code == 0
 
 
 class TestConfig:
-    def test_writes_tempfile(self, tmpdir):
+    @pytest.fixture()
+    def config(self):
+        return cli.CliConfig(default_template="rmarkdown", databricks=DatabricksConfig("a", "b"))
+
+    def test_writes_tempfile(self, tmpdir, config):
         filename = Path(tmpdir.join("config.toml"))
         assert not filename.exists()
-        config = cli.CliConfig(default_template="rmarkdown")
         config.save(filename)
         assert filename.exists()
 
         rehydrated = cli.CliConfig.from_file(filename)
         assert rehydrated == config
 
-    def test_creates_intermediate_path(self, tmpdir):
+    def test_creates_intermediate_path(self, tmpdir, config):
         filename = Path(tmpdir.join("foo", "bar", "config.toml"))
-        config = cli.CliConfig(default_template="rmarkdown")
         config.save(filename)
