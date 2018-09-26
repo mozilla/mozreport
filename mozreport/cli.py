@@ -76,11 +76,19 @@ class CliConfig:
 
         args["databricks"] = {
             "host": click.prompt("Databricks URL", default=defaults["databricks"]["host"]),
-            "token": click.prompt(
+        }
+
+        if not defaults["databricks"]["token"]:
+            click.echo(
+                f"You can create a Databricks access token by navigating to "
+                f'{args["databricks"]["host"]}/#setting/account, selecting "Access Tokens", '
+                f'and "Generate New Token."'
+            )
+
+        args["databricks"]["token"] = click.prompt(
                 "Databricks token",
                 type=str,
-                default=defaults["databricks"]["token"]),
-        }
+                default=defaults["databricks"]["token"])
 
         return cattr.structure(args, cls)
 
