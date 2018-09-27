@@ -19,7 +19,6 @@ class TestCli:
             input=input,
             env={"MOZREPORT_CONFIG": str(tmpdir)},
         )
-        print(result.output)
         assert result.exit_code == 0
         assert tmpdir.join("config.toml").exists()
         result = runner.invoke(
