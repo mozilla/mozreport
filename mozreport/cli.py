@@ -1,6 +1,8 @@
+from itertools import chain, repeat
 import os
 from pathlib import Path
 from typing import Optional, Union
+import uuid
 
 import appdirs
 import attr
@@ -9,6 +11,7 @@ import click
 import toml
 
 from .databricks import DatabricksConfig
+from .experiment import ExperimentConfig
 
 
 @attr.s()
@@ -53,44 +56,70 @@ class CliConfig:
         with open(config_path, "w") as f:
             toml.dump(d, f)
 
-    @classmethod
-    def from_interactive(
-            cls,
-            defaults: Optional[Union[dict, "CliConfig"]] = None,
-            ) -> "CliConfig":
-        if defaults is None:
-            defaults = {}
-        elif isinstance(defaults, cls):
-            defaults = cattr.unstructure(defaults)
 
-        defaults.setdefault("default_template", cls.valid_templates[0])
-        defaults.setdefault("databricks", {})
-        defaults["databricks"].setdefault("host", "https://dbc-caf9527b-e073.cloud.databricks.com")
-        defaults["databricks"].setdefault("token", None)
+def build_cli_config(defaults: Optional[Union[dict, CliConfig]] = None) -> CliConfig:
+    if defaults is None:
+        defaults = {}
+    elif isinstance(defaults, CliConfig):
+        defaults = cattr.unstructure(defaults)
 
-        args = {}
+    defaults.setdefault("default_template", CliConfig.valid_templates[0])
+    defaults.setdefault("databricks", {})
+    defaults["databricks"].setdefault("host", "https://dbc-caf9527b-e073.cloud.databricks.com")
+    defaults["databricks"].setdefault("token", None)
 
-        args["default_template"] = click.prompt(
-            "Default template",
-            default=defaults["default_template"])
+    args = {}
 
-        args["databricks"] = {
-            "host": click.prompt("Databricks URL", default=defaults["databricks"]["host"]),
-        }
+    args["default_template"] = click.prompt(
+        "Default template",
+        default=defaults["default_template"])
 
-        if not defaults["databricks"]["token"]:
-            click.echo(
-                f"You can create a Databricks access token by navigating to "
-                f'{args["databricks"]["host"]}/#setting/account, selecting "Access Tokens", '
-                f'and "Generate New Token."'
-            )
+    args["databricks"] = {
+        "host": click.prompt("Databricks URL", default=defaults["databricks"]["host"]),
+    }
 
-        args["databricks"]["token"] = click.prompt(
-                "Databricks token",
-                type=str,
-                default=defaults["databricks"]["token"])
+    if not defaults["databricks"]["token"]:
+        click.echo(
+            f"You can create a Databricks access token by navigating to "
+            f'{args["databricks"]["host"]}/#setting/account, selecting "Access Tokens", '
+            f'and "Generate New Token."'
+        )
 
-        return cattr.structure(args, cls)
+    args["databricks"]["token"] = click.prompt(
+            "Databricks token",
+            type=str,
+            default=defaults["databricks"]["token"])
+
+    return cattr.structure(args, CliConfig)
+
+
+def build_experiment_config(defaults: Optional[Union[dict, ExperimentConfig]]) -> ExperimentConfig:
+    if defaults is None:
+        defaults = {}
+    elif isinstance(defaults, ExperimentConfig):
+        defaults = cattr.unstructure(defaults)
+
+    args = {
+        "uuid": defaults.get("uuid", uuid.uuid4())
+    }
+
+    args["slug"] = click.prompt(
+        "Experiment slug",
+        type=str,
+        default=defaults.get("slug", None)
+    )
+
+    default_n = len(defaults["branches"]) if "branches" in defaults else 2
+    n_branches = click.prompt("Number of branches", default=default_n)
+
+    branchiter = chain(defaults.get("branches", []), repeat(None))
+    branches = []
+    for i, branchname in zip(range(n_branches), branchiter):
+        branches.append(click.prompt(f"Branch {i+1}", type=str, default=branchname))
+
+    args["branches"] = branches
+
+    return cattr.structure(args, ExperimentConfig)
 
 
 @click.group()
@@ -100,10 +129,25 @@ def cli():
 
 @cli.command()
 def setup():
+    """Configure mozreport with your personal settings.
+    """
     config = None
     try:
         config = CliConfig.from_file()
     except FileNotFoundError:
         pass
-    config = CliConfig.from_interactive(config)
+    config = build_cli_config(config)
     config.save()
+
+
+@cli.command()
+def new():
+    """Begin a new experiment analysis.
+    """
+    experiment_config = None
+    try:
+        experiment_config = ExperimentConfig.from_file()
+    except FileNotFoundError:
+        pass
+    experiment_config = build_experiment_config(experiment_config)
+    experiment_config.save()
