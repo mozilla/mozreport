@@ -129,6 +129,8 @@ def cli():
 
 @cli.command()
 def setup():
+    """Configure mozreport with your personal settings.
+    """
     config = None
     try:
         config = CliConfig.from_file()
@@ -140,6 +142,8 @@ def setup():
 
 @cli.command()
 def new():
+    """Begin a new experiment analysis.
+    """
     experiment_config = None
     try:
         experiment_config = ExperimentConfig.from_file()
