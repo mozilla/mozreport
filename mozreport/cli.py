@@ -53,44 +53,41 @@ class CliConfig:
         with open(config_path, "w") as f:
             toml.dump(d, f)
 
-    @classmethod
-    def from_interactive(
-            cls,
-            defaults: Optional[Union[dict, "CliConfig"]] = None,
-            ) -> "CliConfig":
-        if defaults is None:
-            defaults = {}
-        elif isinstance(defaults, cls):
-            defaults = cattr.unstructure(defaults)
 
-        defaults.setdefault("default_template", cls.valid_templates[0])
-        defaults.setdefault("databricks", {})
-        defaults["databricks"].setdefault("host", "https://dbc-caf9527b-e073.cloud.databricks.com")
-        defaults["databricks"].setdefault("token", None)
+def build_cli_config(defaults: Optional[Union[dict, CliConfig]] = None) -> CliConfig:
+    if defaults is None:
+        defaults = {}
+    elif isinstance(defaults, CliConfig):
+        defaults = cattr.unstructure(defaults)
 
-        args = {}
+    defaults.setdefault("default_template", CliConfig.valid_templates[0])
+    defaults.setdefault("databricks", {})
+    defaults["databricks"].setdefault("host", "https://dbc-caf9527b-e073.cloud.databricks.com")
+    defaults["databricks"].setdefault("token", None)
 
-        args["default_template"] = click.prompt(
-            "Default template",
-            default=defaults["default_template"])
+    args = {}
 
-        args["databricks"] = {
-            "host": click.prompt("Databricks URL", default=defaults["databricks"]["host"]),
-        }
+    args["default_template"] = click.prompt(
+        "Default template",
+        default=defaults["default_template"])
 
-        if not defaults["databricks"]["token"]:
-            click.echo(
-                f"You can create a Databricks access token by navigating to "
-                f'{args["databricks"]["host"]}/#setting/account, selecting "Access Tokens", '
-                f'and "Generate New Token."'
-            )
+    args["databricks"] = {
+        "host": click.prompt("Databricks URL", default=defaults["databricks"]["host"]),
+    }
 
-        args["databricks"]["token"] = click.prompt(
-                "Databricks token",
-                type=str,
-                default=defaults["databricks"]["token"])
+    if not defaults["databricks"]["token"]:
+        click.echo(
+            f"You can create a Databricks access token by navigating to "
+            f'{args["databricks"]["host"]}/#setting/account, selecting "Access Tokens", '
+            f'and "Generate New Token."'
+        )
 
-        return cattr.structure(args, cls)
+    args["databricks"]["token"] = click.prompt(
+            "Databricks token",
+            type=str,
+            default=defaults["databricks"]["token"])
+
+    return cattr.structure(args, CliConfig)
 
 
 @click.group()
@@ -105,5 +102,5 @@ def setup():
         config = CliConfig.from_file()
     except FileNotFoundError:
         pass
-    config = CliConfig.from_interactive(config)
+    config = build_cli_config(config)
     config.save()
