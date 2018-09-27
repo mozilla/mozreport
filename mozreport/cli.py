@@ -1,6 +1,8 @@
+from itertools import chain, repeat
 import os
 from pathlib import Path
 from typing import Optional, Union
+import uuid
 
 import appdirs
 import attr
@@ -9,6 +11,7 @@ import click
 import toml
 
 from .databricks import DatabricksConfig
+from .experiment import ExperimentConfig
 
 
 @attr.s()
@@ -90,6 +93,35 @@ def build_cli_config(defaults: Optional[Union[dict, CliConfig]] = None) -> CliCo
     return cattr.structure(args, CliConfig)
 
 
+def build_experiment_config(defaults: Optional[Union[dict, ExperimentConfig]]) -> ExperimentConfig:
+    if defaults is None:
+        defaults = {}
+    elif isinstance(defaults, ExperimentConfig):
+        defaults = cattr.unstructure(defaults)
+
+    args = {
+        "uuid": defaults.get("uuid", uuid.uuid4())
+    }
+
+    args["slug"] = click.prompt(
+        "Experiment slug",
+        type=str,
+        default=defaults.get("slug", None)
+    )
+
+    default_n = len(defaults["branches"]) if "branches" in defaults else 2
+    n_branches = click.prompt("Number of branches", default=default_n)
+
+    branchiter = chain(defaults.get("branches", []), repeat(None))
+    branches = []
+    for i, branchname in zip(range(n_branches), branchiter):
+        branches.append(click.prompt(f"Branch {i+1}", type=str, default=branchname))
+
+    args["branches"] = branches
+
+    return cattr.structure(args, ExperimentConfig)
+
+
 @click.group()
 def cli():
     pass
@@ -104,3 +136,14 @@ def setup():
         pass
     config = build_cli_config(config)
     config.save()
+
+
+@cli.command()
+def new():
+    experiment_config = None
+    try:
+        experiment_config = ExperimentConfig.from_file()
+    except FileNotFoundError:
+        pass
+    experiment_config = build_experiment_config(experiment_config)
+    experiment_config.save()
