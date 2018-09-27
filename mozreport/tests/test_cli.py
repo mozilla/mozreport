@@ -30,6 +30,29 @@ class TestCli:
         )
         assert result.exit_code == 0
 
+    def test_new(self, runner):
+        input = "slug\n2\ncontrol\nexperiment\n"
+        input2 = "\n\n\n\n"
+        with runner.isolated_filesystem() as tmpdir:
+            outfile = Path(tmpdir)/"mozreport.toml"
+
+            result = runner.invoke(
+                cli.cli,
+                ["new"],
+                input=input,
+            )
+            assert result.exit_code == 0
+            assert outfile.exists()
+            contents = outfile.read_bytes()
+
+            result2 = runner.invoke(
+                cli.cli,
+                ["new"],
+                input=input2,
+            )
+            assert result2.exit_code == 0
+            assert contents == outfile.read_bytes()
+
 
 class TestConfig:
     @pytest.fixture()
