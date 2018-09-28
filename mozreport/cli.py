@@ -11,7 +11,7 @@ import click
 import toml
 
 from .databricks import DatabricksConfig
-from .experiment import ExperimentConfig
+from .experiment import ExperimentConfig, generate_etl_script
 
 
 @attr.s()
@@ -151,3 +151,8 @@ def new():
         pass
     experiment_config = build_experiment_config(experiment_config)
     experiment_config.save()
+
+    click.echo("Writing ETL script to mozreport_etl_script.py...")
+    script = generate_etl_script(experiment_config)
+    with open("mozreport_etl_script.py", "w") as f:
+        f.write(script)

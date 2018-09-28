@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 from typing import List, Optional
 
 import attr
@@ -29,3 +30,16 @@ class ExperimentConfig:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         with open(config_path, "w") as f:
             toml.dump(d, f)
+
+
+def generate_etl_script(experiment_config):
+    etl_script_path = Path(__file__).parent/"etl_script.py"
+    etl_script = etl_script_path.read_text()
+    blob = cattr.unstructure(experiment_config)
+    etl_script = re.sub(
+        r"^# BEGIN_BLOB.*# END_BLOB",
+        f'blob = """{blob}"""',
+        etl_script,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    return etl_script
