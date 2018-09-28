@@ -1,5 +1,8 @@
 from io import BytesIO
+import time
 from unittest.mock import Mock, create_autospec
+from uuid import uuid4
+from textwrap import dedent
 
 import pytest
 import requests
@@ -25,13 +28,40 @@ class TestDatabricksIntegration:
 
     def test_file_roundtrip(self, client):
         contents = BytesIO(b"Hello, world")
-        path = "/mozreport/test-1234"  # fixme
+        path = "/mozreport/test_" + str(uuid4())
         if client.file_exists(path):
             client.delete_file(path)
         client.upload_file(contents, path)
         assert client.file_exists(path)
         client.delete_file(path)
         assert not client.file_exists(path)
+
+    def test_submit_python_task(self, client):
+        uuid = uuid4()
+        script_path = f"/mozreport/test_{uuid}.py"
+        output_path = f"/mozreport/test_{uuid}.result"
+        test_script = dedent(f"""\
+            colnames = spark.table("main_summary").columns
+            with open("/dbfs{output_path}", "w") as f:
+                f.write(repr(colnames))
+        """)
+        client.upload_file(test_script, script_path)
+        run_id = client.submit_python_task(
+            "Test run",
+            "1003-151000-grebe23",  # shared_serverless
+            script_path,
+        )
+        while True:
+            time.sleep(5)
+            status = client.run_info(run_id)
+            state = status["state"]["life_cycle_state"]
+            url = status["run_page_url"]
+            print(f"{state}; {url}")
+            if state == "TERMINATED":
+                break
+        assert client.file_exists(output_path)
+        client.delete_file(script_path)
+        client.delete_file(output_path)
 
 
 class TestDatabricks:
@@ -76,3 +106,23 @@ class TestDatabricks:
         session.post.return_value.status_code = 500
         with pytest.raises(databricks.DatabricksException):
             client.delete_file("/foo")
+
+    def test_submit_python_task(self, mocked_client):
+        client, session = mocked_client
+        session.post.return_value.json.return_value = {"run_id": 1234}
+        run_id = client.submit_python_task("run name", "cluster_id", "remote_path")
+        assert run_id == 1234
+        session.post.assert_called_once()
+
+        session.post.return_value.status_code = 500
+        with pytest.raises(databricks.DatabricksException):
+            client.submit_python_task("run name", "cluster_id", "remote_path")
+
+    def test_run_info(self, mocked_client):
+        client, session = mocked_client
+        client.run_info(1234)
+        session.get.assert_called_once()
+
+        session.get.return_value.status_code = 500
+        with pytest.raises(databricks.DatabricksException):
+            client.run_info(1234)

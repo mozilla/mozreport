@@ -6,6 +6,8 @@ import attr
 import cattr
 import toml
 
+from . import databricks
+
 
 @attr.s
 class ExperimentConfig:
@@ -43,3 +45,18 @@ def generate_etl_script(experiment_config):
         flags=re.MULTILINE | re.DOTALL,
     )
     return etl_script
+
+
+def submit_etl_script(
+    etl_script: str,
+    experiment: ExperimentConfig,
+    client: databricks.Client,
+    cluster_slug: str,
+) -> None:
+    remote_working_path = "/mozreport/%s-%s" % (experiment.slug, experiment.uuid)
+    etl_script_destination = remote_working_path + "/mozreport_etl_script.py"
+    if client.file_exists(etl_script_destination):
+        client.delete_file(etl_script_destination)
+    client.upload_file(etl_script, etl_script_destination)
+    job_id = client.submit_python_task(experiment.slug, cluster_slug, etl_script_destination)
+    return job_id

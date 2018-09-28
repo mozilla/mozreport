@@ -56,6 +56,39 @@ class Client:
         if response.status_code != 200:
             raise DatabricksException(response.text)
 
+    def submit_python_task(
+        self,
+        run_name: str,
+        existing_cluster_id: str,
+        remote_path: str
+    ) -> int:
+        url = urljoin(self.config.host, "/api/2.0/jobs/runs/submit")
+        job_definition = {
+            "run_name": run_name,
+            "existing_cluster_id": existing_cluster_id,
+            "spark_python_task": {
+                "python_file": "dbfs:" + remote_path,
+                "parameters": [],
+            }
+        }
+        response = self._requests.post(
+            url,
+            json=job_definition,
+        )
+        if response.status_code != 200:
+            raise DatabricksException(response.text)
+        return response.json()["run_id"]
+
+    def run_info(self, run_id: int) -> dict:
+        url = urljoin(self.config.host, "/api/2.0/jobs/runs/get")
+        response = self._requests.get(
+            url,
+            params={"run_id": run_id},
+        )
+        if response.status_code != 200:
+            raise DatabricksException(response.text)
+        return response.json()
+
 
 class DatabricksException(Exception):
     pass
