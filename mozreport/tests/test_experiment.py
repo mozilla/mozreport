@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from mozreport.experiment import ExperimentConfig
+from mozreport.experiment import ExperimentConfig, generate_etl_script
 
 
 class TestExperimentConfig:
@@ -33,3 +33,9 @@ class TestExperimentConfig:
     def test_creates_intermediate_path(self, tmpdir, config):
         filename = Path(tmpdir.join("foo", "bar", "config.toml"))
         config.save(filename)
+
+    def test_config_injection(self, config):
+        generated = generate_etl_script(config)
+        assert "experiment-uuid" in generated
+        # Test that the generated code doesn't throw a syntax error
+        compile(generated, "<string>", mode="exec")
