@@ -10,8 +10,8 @@ import cattr
 import click
 import toml
 
-from .databricks import DatabricksConfig
-from .experiment import ExperimentConfig, generate_etl_script
+from .databricks import DatabricksConfig, Client
+from .experiment import ExperimentConfig, generate_etl_script, submit_etl_script
 
 
 @attr.s()
@@ -156,3 +156,31 @@ def new():
     script = generate_etl_script(experiment_config)
     with open("mozreport_etl_script.py", "w") as f:
         f.write(script)
+
+
+@cli.command()
+@click.option(
+    "--cluster_slug",
+    default="1003-151000-grebe23",
+    help=(
+        "Cluster ID (not the cluster name) of the Databricks cluster to use. "
+        "Defaults to the slug for shared_serverless."
+    ),
+)
+@click.argument("filename", default="mozreport_etl_script.py", type=click.Path(exists=True))
+def submit(cluster_slug, filename):
+    """Run a Python script on Databricks.
+
+    FILENAME: The name of the file to upload and run. Defaults to mozreport_etl_script.py.
+    """
+    config = CliConfig.from_file()
+    experiment = ExperimentConfig.from_file()
+    client = Client(config.databricks)
+    with open(filename, "r") as f:
+        script = f.read()
+    submit_etl_script(
+        script,
+        experiment,
+        client,
+        cluster_slug,
+    )

@@ -1,8 +1,11 @@
 from pathlib import Path
+from unittest.mock import create_autospec
+
 import pytest
 
 from mozreport import cli
-from mozreport.databricks import DatabricksConfig
+from mozreport.databricks import DatabricksConfig, Client
+from mozreport.experiment import ExperimentConfig
 
 
 class TestCli:
@@ -51,6 +54,28 @@ class TestCli:
             )
             assert result2.exit_code == 0
             assert contents == outfile.read_bytes()
+
+    def write_config_files(self):
+        databricks = DatabricksConfig(host="foo", token="bar")
+        cliconfig = cli.CliConfig(default_template="rmarkdown", databricks=databricks)
+        experiment = ExperimentConfig(uuid="monty", slug="camelot", branches=["spam", "eggs"])
+        cliconfig.save(Path("config.toml"))
+        experiment.save()
+
+    def test_submit(self, runner, monkeypatch):
+        mock_client = create_autospec(Client)
+        mock_client.submit_python_task.return_value = 1234
+        monkeypatch.setattr(cli, "Client", mock_client)
+
+        result = runner.invoke(cli.cli, ["submit", "--help"])
+        assert result.exit_code == 0
+
+        with runner.isolated_filesystem() as tmpdir:
+            self.write_config_files()
+            with open("mozreport_etl_script.py", "x") as f:
+                f.write("dummy file")
+            result = runner.invoke(cli.cli, ["submit"], env={"MOZREPORT_CONFIG": tmpdir})
+        assert result.exit_code == 0
 
 
 class TestConfig:
