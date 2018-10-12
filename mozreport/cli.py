@@ -1,11 +1,9 @@
 from itertools import chain, repeat
-import os
 from pathlib import Path
 import sys
 from typing import Optional, Union
 import uuid
 
-import appdirs
 import attr
 import cattr
 import click
@@ -13,6 +11,7 @@ import toml
 
 from .databricks import DatabricksConfig, Client
 from .experiment import ExperimentConfig, generate_etl_script, submit_etl_script
+from .util import get_data_dir
 
 
 @attr.s()
@@ -32,12 +31,7 @@ class CliConfig:
 
     @staticmethod
     def _default_config_path():
-        parent = Path(
-            os.environ.get(
-                "MOZREPORT_CONFIG",
-                appdirs.user_data_dir("mozreport", "Mozilla")
-            ))
-        return parent/"config.toml"
+        return get_data_dir()/"config.toml"
 
     @classmethod
     def from_file(cls, config_path: Optional[Path] = None) -> "CliConfig":
