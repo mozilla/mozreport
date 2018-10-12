@@ -27,12 +27,14 @@ class TestDatabricksIntegration:
         assert not client.file_exists("/this_file_definitely_does_not_exist_asdfasdfa")
 
     def test_file_roundtrip(self, client):
-        contents = BytesIO(b"Hello, world")
+        s = b"Hello, world"
+        contents = BytesIO(s)
         path = "/mozreport/test_" + str(uuid4())
         if client.file_exists(path):
             client.delete_file(path)
         client.upload_file(contents, path)
         assert client.file_exists(path)
+        assert client.get_file(path) == s
         client.delete_file(path)
         assert not client.file_exists(path)
 
