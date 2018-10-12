@@ -1,11 +1,20 @@
 from pathlib import Path
-from unittest.mock import create_autospec
+from unittest.mock import Mock, create_autospec
+import sys
 
 import pytest
 
 from mozreport import cli
 from mozreport.databricks import DatabricksConfig, Client
 from mozreport.experiment import ExperimentConfig
+
+
+def write_config_files():
+    databricks = DatabricksConfig(host="foo", token="bar")
+    cliconfig = cli.CliConfig(default_template="rmarkdown", databricks=databricks)
+    experiment = ExperimentConfig(uuid="monty", slug="camelot", branches=["spam", "eggs"])
+    cliconfig.save(Path("config.toml"))
+    experiment.save()
 
 
 class TestCli:
@@ -55,13 +64,6 @@ class TestCli:
             assert result2.exit_code == 0
             assert contents == outfile.read_bytes()
 
-    def write_config_files(self):
-        databricks = DatabricksConfig(host="foo", token="bar")
-        cliconfig = cli.CliConfig(default_template="rmarkdown", databricks=databricks)
-        experiment = ExperimentConfig(uuid="monty", slug="camelot", branches=["spam", "eggs"])
-        cliconfig.save(Path("config.toml"))
-        experiment.save()
-
     def test_submit(self, runner, monkeypatch):
         mock_client = create_autospec(Client)
         mock_client.return_value.submit_python_task.return_value = 1234
@@ -71,7 +73,7 @@ class TestCli:
         assert result.exit_code == 0
 
         with runner.isolated_filesystem() as tmpdir:
-            self.write_config_files()
+            write_config_files()
             with open("mozreport_etl_script.py", "x") as f:
                 f.write("dummy file")
             result = runner.invoke(cli.cli, ["submit"], env={"MOZREPORT_CONFIG": tmpdir})
@@ -84,7 +86,7 @@ class TestCli:
         monkeypatch.setattr(cli, "Client", mock_client)
 
         with runner.isolated_filesystem() as tmpdir:
-            self.write_config_files()
+            write_config_files()
             result = runner.invoke(cli.cli, ["fetch"], env={"MOZREPORT_CONFIG": tmpdir})
             with open("summary.csv", "rb") as f:
                 assert f.read() == response
@@ -108,3 +110,29 @@ class TestConfig:
     def test_creates_intermediate_path(self, tmpdir, config):
         filename = Path(tmpdir.join("foo", "bar", "config.toml"))
         config.save(filename)
+
+
+class TestHelpers:
+    def test_get_cli_config_or_die(self, tmpdir, monkeypatch, capsys):
+        exit = Mock()
+        monkeypatch.setattr(sys, "exit", exit)
+        monkeypatch.setenv("MOZREPORT_CONFIG", tmpdir)
+        with tmpdir.as_cwd():
+            cli.get_cli_config_or_die()
+            exit.assert_called_once()
+            assert "setup" in capsys.readouterr().err
+
+            write_config_files()
+            assert isinstance(cli.get_cli_config_or_die(), cli.CliConfig)
+
+    def test_get_experiment_config_or_die(self, tmpdir, monkeypatch, capsys):
+        exit = Mock()
+        monkeypatch.setattr(sys, "exit", exit)
+        monkeypatch.setenv("MOZREPORT_CONFIG", tmpdir)
+        with tmpdir.as_cwd():
+            cli.get_experiment_config_or_die()
+            exit.assert_called_once()
+            assert "new" in capsys.readouterr().err
+
+            write_config_files()
+            assert isinstance(cli.get_experiment_config_or_die(), ExperimentConfig)
