@@ -1,3 +1,4 @@
+from base64 import b64decode
 from typing.io import IO
 from urllib.parse import urljoin
 
@@ -46,6 +47,29 @@ class Client:
         if body["error_code"] == "RESOURCE_DOES_NOT_EXIST":
             return False
         raise DatabricksException(repr(body))
+
+    def get_file(self, remote_path: str) -> bytes:
+        url = urljoin(self.config.host, "/api/2.0/dbfs/read")
+        chunks = []
+        offset = 0
+        megabyte = 1 << 20  # maximum chunk size, per api docs
+        bytes_read = megabyte
+        while bytes_read == megabyte:
+            response = self._requests.get(
+                url,
+                params={
+                    "path": remote_path,
+                    "offset": offset,
+                    "length": megabyte,
+                }
+            )
+            if response.status_code != 200:
+                raise DatabricksException(response.text)
+            body = response.json()
+            bytes_read = body["bytes_read"]
+            offset += megabyte
+            chunks.append(b64decode(body["data"]))
+        return b''.join(chunks)
 
     def delete_file(self, remote_path: str, recursive: bool = False) -> None:
         url = urljoin(self.config.host, "/api/2.0/dbfs/delete")
