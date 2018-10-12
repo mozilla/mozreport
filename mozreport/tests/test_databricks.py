@@ -1,3 +1,4 @@
+from base64 import b64encode
 from io import BytesIO
 import time
 from unittest.mock import Mock, create_autospec
@@ -27,12 +28,14 @@ class TestDatabricksIntegration:
         assert not client.file_exists("/this_file_definitely_does_not_exist_asdfasdfa")
 
     def test_file_roundtrip(self, client):
-        contents = BytesIO(b"Hello, world")
+        s = b"Hello, world"
+        contents = BytesIO(s)
         path = "/mozreport/test_" + str(uuid4())
         if client.file_exists(path):
             client.delete_file(path)
         client.upload_file(contents, path)
         assert client.file_exists(path)
+        assert client.get_file(path) == s
         client.delete_file(path)
         assert not client.file_exists(path)
 
@@ -126,3 +129,24 @@ class TestDatabricks:
         session.get.return_value.status_code = 500
         with pytest.raises(databricks.DatabricksException):
             client.run_info(1234)
+
+    def test_get_file(self, mocked_client):
+        client, session = mocked_client
+        megabyte = 1 << 20
+        chunks = [b"A" * megabyte, b"B" * megabyte]
+        session.get.return_value.json.side_effect = [
+            {
+                "bytes_read": megabyte,
+                "data": b64encode(chunks[0]).decode("ascii"),
+            }, {
+                "bytes_read": megabyte,
+                "data": b64encode(chunks[1]).decode("ascii"),
+            }, {
+                "bytes_read": 0,
+                "data": "",
+            }]
+        assert client.get_file("/some/file") == b"".join(chunks)
+
+        session.get.return_value.status_code = 404
+        with pytest.raises(databricks.DatabricksException):
+            client.get_file("/doesnt_exist")

@@ -1,6 +1,7 @@
 from itertools import chain, repeat
 import os
 from pathlib import Path
+import sys
 from typing import Optional, Union
 import uuid
 
@@ -122,6 +123,30 @@ def build_experiment_config(defaults: Optional[Union[dict, ExperimentConfig]]) -
     return cattr.structure(args, ExperimentConfig)
 
 
+def get_cli_config_or_die() -> CliConfig:
+    try:
+        return CliConfig.from_file()
+    except FileNotFoundError:
+        click.echo(
+            "I can't find your mozreport configuration file.\n"
+            "Have you run `mozreport setup` yet?",
+            err=True,
+        )
+        sys.exit(1)
+
+
+def get_experiment_config_or_die() -> ExperimentConfig:
+    try:
+        return ExperimentConfig.from_file()
+    except FileNotFoundError:
+        click.echo(
+            "I can't find an experiment configuration file in this path.\n"
+            "Have you run `mozreport new` yet?",
+            err=True,
+        )
+        sys.exit(1)
+
+
 @click.group()
 def cli():
     pass
@@ -173,8 +198,8 @@ def submit(cluster_slug, filename):
 
     FILENAME: The name of the file to upload and run. Defaults to mozreport_etl_script.py.
     """
-    config = CliConfig.from_file()
-    experiment = ExperimentConfig.from_file()
+    config = get_cli_config_or_die()
+    experiment = get_experiment_config_or_die()
     client = Client(config.databricks)
     with open(filename, "r") as f:
         script = f.read()
@@ -184,3 +209,14 @@ def submit(cluster_slug, filename):
         client,
         cluster_slug,
     )
+
+
+@cli.command()
+def fetch():
+    config = get_cli_config_or_die()
+    experiment = get_experiment_config_or_die()
+    client = Client(config.databricks)
+    remote_filename = experiment.dbfs_working_path + "/summary.csv"
+    summary = client.get_file(remote_filename)
+    with open("summary.csv", "wb") as f:
+        f.write(summary)
