@@ -11,6 +11,7 @@ import toml
 
 from .databricks import DatabricksConfig, Client
 from .experiment import ExperimentConfig, generate_etl_script, submit_etl_script
+from .template import Template
 from .util import get_data_dir
 
 
@@ -20,7 +21,7 @@ class CliConfig:
     databricks: DatabricksConfig = attr.ib()
     version: str = attr.ib(default="v1")
 
-    valid_templates = ["rmarkdown"]
+    valid_templates = [t.name for t in Template.find_all()]
 
     @default_template.validator
     def validate_default_template(self, attribute, value) -> None:
