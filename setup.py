@@ -12,18 +12,20 @@ extras = {
 
 setup(
     name='mozreport',
-    version='201809.dev0',
+    use_incremental=True,
     description='CLI for generating experiment reports',
     author='Tim D. Smith',
     author_email='tdsmith@mozilla.com',
     url='https://github.com/tdsmith/mozreport',
     packages=["mozreport"],
     include_package_data=True,
+    setup_requires=["incremental"],
     install_requires=[
         "appdirs",
         "attrs",
         "cattrs",
         "click",
+        "incremental",
         "requests",
         "toml"
     ],
