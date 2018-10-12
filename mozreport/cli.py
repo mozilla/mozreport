@@ -209,3 +209,14 @@ def submit(cluster_slug, filename):
         client,
         cluster_slug,
     )
+
+
+@cli.command()
+def fetch():
+    config = get_cli_config_or_die()
+    experiment = get_experiment_config_or_die()
+    client = Client(config.databricks)
+    remote_filename = experiment.dbfs_working_path + "/summary.csv"
+    summary = client.get_file(remote_filename)
+    with open("summary.csv", "wb") as f:
+        f.write(summary)

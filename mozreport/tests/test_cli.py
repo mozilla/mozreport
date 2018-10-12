@@ -64,7 +64,7 @@ class TestCli:
 
     def test_submit(self, runner, monkeypatch):
         mock_client = create_autospec(Client)
-        mock_client.submit_python_task.return_value = 1234
+        mock_client.return_value.submit_python_task.return_value = 1234
         monkeypatch.setattr(cli, "Client", mock_client)
 
         result = runner.invoke(cli.cli, ["submit", "--help"])
@@ -75,6 +75,19 @@ class TestCli:
             with open("mozreport_etl_script.py", "x") as f:
                 f.write("dummy file")
             result = runner.invoke(cli.cli, ["submit"], env={"MOZREPORT_CONFIG": tmpdir})
+        assert result.exit_code == 0
+
+    def test_fetch(self, runner, monkeypatch):
+        response = b"Hello, world! " + "🌎".encode("utf-8")
+        mock_client = create_autospec(Client)
+        mock_client.return_value.get_file.return_value = response
+        monkeypatch.setattr(cli, "Client", mock_client)
+
+        with runner.isolated_filesystem() as tmpdir:
+            self.write_config_files()
+            result = runner.invoke(cli.cli, ["fetch"], env={"MOZREPORT_CONFIG": tmpdir})
+            with open("summary.csv", "rb") as f:
+                assert f.read() == response
         assert result.exit_code == 0
 
 
