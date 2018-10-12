@@ -1,6 +1,7 @@
 # This is a script for computing the core product metrics for an experiment.
 
 import json
+import re
 import os
 
 # BEGIN_BLOB
@@ -17,13 +18,22 @@ blob = """
 # END_BLOB
 
 
+def name_to_stub(name):
+    """
+    Makes a filename-safe stub from an arbitrary title.
+    Ex.: "My Life (And Hard Times)" -> "my_life_and_hard_times"
+    """
+    return re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_").lower()
+
+
 def run_etl(root="/"):
     config = json.loads(blob)
+    slug = name_to_stub(config["slug"])
     output_path = os.path.join(
         root,
         "dbfs",
         "mozreport",
-        "%s-%s" % (config["slug"], config["uuid"]),
+        "%s-%s" % (slug, config["uuid"]),
         "summary.csv")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "wt") as f:

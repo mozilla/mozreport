@@ -7,6 +7,7 @@ import cattr
 import toml
 
 from . import databricks
+from .util import name_to_stub
 
 
 @attr.s
@@ -33,6 +34,11 @@ class ExperimentConfig:
         with open(config_path, "w") as f:
             toml.dump(d, f)
 
+    @property
+    def dbfs_working_path(self):
+        slug = name_to_stub(self.slug)
+        return f"/mozreport/{slug}-{self.uuid}"
+
 
 def generate_etl_script(experiment_config):
     etl_script_path = Path(__file__).parent/"etl_script.py"
@@ -53,7 +59,7 @@ def submit_etl_script(
     client: databricks.Client,
     cluster_slug: str,
 ) -> None:
-    remote_working_path = "/mozreport/%s-%s" % (experiment.slug, experiment.uuid)
+    remote_working_path = experiment.dbfs_working_path
     etl_script_destination = remote_working_path + "/mozreport_etl_script.py"
     if client.file_exists(etl_script_destination):
         client.delete_file(etl_script_destination)
