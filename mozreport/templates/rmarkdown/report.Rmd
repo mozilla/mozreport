@@ -1,0 +1,81 @@
+---
+title: "Report title"
+author: ""
+date: ""
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(readr)
+
+results = read_csv("summary.csv")
+
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Executive summary
+
+<!--
+Consider including:
+ * A summary of results
+ * Links to the PHD and any relevant bugs
+-->
+
+# Introduction
+
+<!--
+Consider including:
+ * Any useful background on the experiment you ran and why you expected it to be interesting
+ * Links to any requirements documents
+-->
+
+# Results
+
+## Experiment-specific outcome measures
+
+<!--
+Present results here.
+
+Consider rewording the headers to summarize the contents of the section
+(e.g. instead of "Total time per user", try "Total time per user was similar" or
+"Total time per user increased 30%")
+-->
+
+## Engagement
+
+### Total time per user
+
+```{r total_time_per_user}
+
+```
+
+### Active time per user
+```{r active_time_per_user}
+
+```
+
+### Session intensity
+
+
+
+### URIs visited per active hour
+
+## Retention
+
+### 3-week retention
+
+### Active 3-week retention
+
+# Discussion
+
+<!--
+Discuss and contextualize the results here.
+-->
+
+# Methods
+
+mozreport was version MOZREPORT_VERSION.
