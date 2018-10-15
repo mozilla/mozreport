@@ -111,6 +111,10 @@ class TestConfig:
         filename = Path(tmpdir.join("foo", "bar", "config.toml"))
         config.save(filename)
 
+    def test_rejects_invalid_template(self):
+        with pytest.raises(ValueError):
+            cli.CliConfig(default_template="asdfasdf", databricks=DatabricksConfig("a", "b"))
+
 
 class TestHelpers:
     def test_get_cli_config_or_die(self, tmpdir, monkeypatch, capsys):
