@@ -18,7 +18,11 @@ setup(
     author_email='tdsmith@mozilla.com',
     url='https://github.com/tdsmith/mozreport',
     packages=["mozreport", "mozreport.tests"],
-    include_package_data=True,
+    package_data={
+        "mozreport": [
+            "templates/**/*",
+        ],
+    },
     setup_requires=["incremental"],
     install_requires=[
         "appdirs",
