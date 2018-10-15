@@ -17,7 +17,7 @@ setup(
     author='Tim D. Smith',
     author_email='tdsmith@mozilla.com',
     url='https://github.com/tdsmith/mozreport',
-    packages=["mozreport"],
+    packages=["mozreport", "mozreport.tests"],
     include_package_data=True,
     setup_requires=["incremental"],
     install_requires=[
