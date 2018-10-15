@@ -116,7 +116,7 @@ class TestHelpers:
     def test_get_cli_config_or_die(self, tmpdir, monkeypatch, capsys):
         exit = Mock()
         monkeypatch.setattr(sys, "exit", exit)
-        monkeypatch.setenv("MOZREPORT_CONFIG", tmpdir)
+        monkeypatch.setenv("MOZREPORT_CONFIG", str(tmpdir))
         with tmpdir.as_cwd():
             cli.get_cli_config_or_die()
             exit.assert_called_once()
@@ -128,7 +128,7 @@ class TestHelpers:
     def test_get_experiment_config_or_die(self, tmpdir, monkeypatch, capsys):
         exit = Mock()
         monkeypatch.setattr(sys, "exit", exit)
-        monkeypatch.setenv("MOZREPORT_CONFIG", tmpdir)
+        monkeypatch.setenv("MOZREPORT_CONFIG", str(tmpdir))
         with tmpdir.as_cwd():
             cli.get_experiment_config_or_die()
             exit.assert_called_once()
