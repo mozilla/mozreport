@@ -92,6 +92,27 @@ class TestCli:
                 assert f.read() == response
         assert result.exit_code == 0
 
+    def test_report(self, runner):
+        with runner.isolated_filesystem() as tmpdir:
+            write_config_files()
+            result = runner.invoke(
+                cli.cli,
+                ["report", "--template", "rmarkdown"],
+                env={"MOZREPORT_CONFIG": tmpdir},
+            )
+            assert result.exit_code == 0
+            assert (Path(tmpdir)/"report.Rmd").exists()
+
+        with runner.isolated_filesystem() as tmpdir:
+            write_config_files()
+            result = runner.invoke(
+                cli.cli,
+                ["report", "--template", "asdfasdf"],
+                env={"MOZREPORT_CONFIG": tmpdir},
+            )
+            assert result.exit_code == 1
+            assert "asdfasdf" in result.output
+
 
 class TestConfig:
     @pytest.fixture()

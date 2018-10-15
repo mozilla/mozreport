@@ -215,3 +215,17 @@ def fetch():
     summary = client.get_file(remote_filename)
     with open("summary.csv", "wb") as f:
         f.write(summary)
+
+
+@cli.command()
+@click.option("--template")
+def report(template):
+    config = get_cli_config_or_die()
+    all_templates = Template.find_all()
+    template = template or config.default_template
+    found = [t for t in all_templates if t.name == template]
+    if not found:
+        click.echo(f"Couldn't find template {template}.", err=True)
+        click.echo("I know about: " + ','.join(t.name for t in all_templates), err=True)
+        sys.exit(1)
+    found[0].emplace(Path.cwd(), overwrite=False)
