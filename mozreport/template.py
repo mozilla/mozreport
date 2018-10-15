@@ -1,8 +1,10 @@
+from os import walk
 from pathlib import Path
 from typing import List, Optional
 
 import attr
 
+from ._version import __version__
 from .util import get_data_dir
 
 
@@ -27,3 +29,24 @@ class Template:
                     path=child,
                 ))
         return discovered
+
+    def emplace(self, target: Path, overwrite: bool = True) -> None:
+        if not target.exists():
+            raise FileNotFoundError(str(target))
+        if not target.is_dir():
+            raise NotADirectoryError(str(target))
+
+        def transform(x):
+            return x.replace(b"MOZREPORT_VERSION", __version__.public().encode("ascii"))
+
+        for (path, dirs, files) in walk(self.path):
+            path = Path(path)
+            relative = path.relative_to(self.path)
+            (target / relative).mkdir(exist_ok=True)
+            for filename in files:
+                dest = target/relative/filename
+                if not overwrite and dest.exists():
+                    raise FileExistsError(str(dest))
+                buffer = (path/filename).read_bytes()
+                buffer = transform(buffer)
+                dest.write_bytes(buffer)
