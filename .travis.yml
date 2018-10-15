@@ -12,7 +12,7 @@ python:
 matrix:
   include:
   - python: "3.7"
-    env: TOXENV=flake8
+    env: TOXENV=py37-flake8
 
 cache: pip
 addons:
