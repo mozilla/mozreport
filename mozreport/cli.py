@@ -218,12 +218,15 @@ def submit(cluster_slug, filename):
     client = Client(config.databricks)
     with open(filename, "r") as f:
         script = f.read()
-    submit_etl_script(
+    run_id = submit_etl_script(
         script,
         experiment,
         client,
         cluster_slug,
     )
+    status = client.run_info(run_id)
+    url = status["run_page_url"]
+    click.echo("Submitted. Job status: " + url)
 
 
 @cli.command()
