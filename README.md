@@ -1,4 +1,4 @@
-# mozreport [![Build Status](https://travis-ci.org/tdsmith/mozreport.svg?branch=master)](https://travis-ci.org/tdsmith/mozreport) ![PyPI](https://img.shields.io/pypi/v/mozreport.svg)
+# mozreport [![Build Status](https://travis-ci.org/tdsmith/mozreport.svg?branch=master)](https://travis-ci.org/tdsmith/mozreport) [![PyPI](https://img.shields.io/pypi/v/mozreport.svg)](https://pypi.org/project/mozreport/)
 
 mozreport is a CLI tool that intends to help streamline
 the process of preparing an experiment report.
