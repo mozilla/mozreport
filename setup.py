@@ -1,22 +1,22 @@
 from setuptools import setup
 
 test_deps = [
-    'coverage',
-    'pytest-cov',
-    'pytest',
+    "coverage",
+    "pytest-cov",
+    "pytest",
 ]
 
 extras = {
-    'testing': test_deps,
+    "testing": test_deps,
 }
 
 setup(
-    name='mozreport',
+    name="mozreport",
     use_incremental=True,
-    description='CLI for generating experiment reports',
-    author='Tim D. Smith',
-    author_email='tdsmith@mozilla.com',
-    url='https://github.com/tdsmith/mozreport',
+    description="CLI for generating experiment reports",
+    author="Tim D. Smith",
+    author_email="tdsmith@mozilla.com",
+    url="https://github.com/tdsmith/mozreport",
     packages=["mozreport", "mozreport.tests"],
     package_data={
         "mozreport": [
