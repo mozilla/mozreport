@@ -10,6 +10,9 @@ extras = {
     "testing": test_deps,
 }
 
+with open("README.md") as f:
+    long_description = f.read()
+
 setup(
     name="mozreport",
     use_incremental=True,
@@ -40,4 +43,6 @@ setup(
             "mozreport=mozreport.cli:cli",
         ]
     },
+    long_description=long_description,
+    long_description_content_type="text/markdown",
 )
