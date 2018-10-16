@@ -1,22 +1,25 @@
 from setuptools import setup
 
 test_deps = [
-    'coverage',
-    'pytest-cov',
-    'pytest',
+    "coverage",
+    "pytest-cov",
+    "pytest",
 ]
 
 extras = {
-    'testing': test_deps,
+    "testing": test_deps,
 }
 
+with open("README.md") as f:
+    long_description = f.read()
+
 setup(
-    name='mozreport',
+    name="mozreport",
     use_incremental=True,
-    description='CLI for generating experiment reports',
-    author='Tim D. Smith',
-    author_email='tdsmith@mozilla.com',
-    url='https://github.com/tdsmith/mozreport',
+    description="CLI for generating experiment reports",
+    author="Tim D. Smith",
+    author_email="tdsmith@mozilla.com",
+    url="https://github.com/tdsmith/mozreport",
     packages=["mozreport", "mozreport.tests"],
     package_data={
         "mozreport": [
@@ -40,4 +43,7 @@ setup(
             "mozreport=mozreport.cli:cli",
         ]
     },
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    python_requires=">=3.6",
 )
