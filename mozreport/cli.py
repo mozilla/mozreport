@@ -15,6 +15,31 @@ from .template import Template
 from .util import get_data_dir
 
 
+def cli():
+    pass
+
+
+cli.__doc__ = f"""
+    Mozreport helps you write experiment reports.
+
+    The workflow looks like:
+
+    * `mozreport setup` the first time you use Mozreport
+
+    * `mozreport new` to declare a new experiment and generate an analysis script
+
+    * `mozreport submit` to run an analysis script on Databricks
+
+    * `mozreport fetch` to download the result
+
+    * `mozreport report` to set up a report template
+
+    \b
+    The local configuration directory is {get_data_dir()}.
+"""
+cli = click.group()(cli)
+
+
 @attr.s()
 class CliConfig:
     default_template: str = attr.ib()
@@ -142,11 +167,6 @@ def get_experiment_config_or_die() -> ExperimentConfig:
         sys.exit(1)
 
 
-@click.group()
-def cli():
-    pass
-
-
 @cli.command()
 def setup():
     """Configure mozreport with your personal settings.
@@ -208,6 +228,8 @@ def submit(cluster_slug, filename):
 
 @cli.command()
 def fetch():
+    """Fetch a summary.csv file from Databricks.
+    """
     config = get_cli_config_or_die()
     experiment = get_experiment_config_or_die()
     client = Client(config.databricks)
@@ -218,8 +240,10 @@ def fetch():
 
 
 @cli.command()
-@click.option("--template")
+@click.option("--template", help="Template name to use")
 def report(template):
+    """Install a report template in the current working directory.
+    """
     config = get_cli_config_or_die()
     all_templates = Template.find_all()
     template = template or config.default_template
