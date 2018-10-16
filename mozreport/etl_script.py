@@ -35,7 +35,8 @@ def run_etl(root="/"):
         "mozreport",
         "%s-%s" % (slug, config["uuid"]),
         "summary.csv")
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    if not os.path.exists(os.path.dirname(output_path)):
+        os.makedirs(os.path.dirname(output_path))
     with open(output_path, "wt") as f:
         f.write(blob)
 
