@@ -43,9 +43,11 @@ class TestDatabricksIntegration:
         uuid = uuid4()
         script_path = f"/mozreport/test_{uuid}.py"
         output_path = f"/mozreport/test_{uuid}.result"
-        test_script = dedent(f"""\
+        test_script = dedent("""\
+            import sys
+            output_path = sys.argv[1]
             colnames = spark.table("main_summary").columns
-            with open("/dbfs{output_path}", "w") as f:
+            with open(output_path, "w") as f:
                 f.write(repr(colnames))
         """)
         client.upload_file(test_script, script_path)
@@ -53,6 +55,7 @@ class TestDatabricksIntegration:
             "Test run",
             "1003-151000-grebe23",  # shared_serverless
             script_path,
+            parameters=["/dbfs" + output_path]
         )
         while True:
             time.sleep(5)
