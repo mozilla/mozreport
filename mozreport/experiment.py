@@ -56,7 +56,7 @@ def submit_etl_script(
     if client.file_exists(etl_script_destination):
         client.delete_file(etl_script_destination)
     client.upload_file(etl_script, etl_script_destination)
-    params = ["--slug", experiment.slug]
+    params = ["--slug", experiment.slug, "--uuid", experiment.uuid]
     for branch in experiment.branches:
         params.extend(["--branch", branch])
     job_id = client.submit_python_task(
