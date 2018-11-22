@@ -1,6 +1,4 @@
-import json
 from pathlib import Path
-import re
 from typing import List, Optional
 
 import attr
@@ -44,13 +42,6 @@ class ExperimentConfig:
 def generate_etl_script(experiment_config):
     etl_script_path = Path(__file__).parent/"etl_script.py"
     etl_script = etl_script_path.read_text()
-    blob = json.dumps(cattr.unstructure(experiment_config))
-    etl_script = re.sub(
-        r"^# BEGIN_BLOB.*# END_BLOB",
-        f'blob = """{blob}"""',
-        etl_script,
-        flags=re.MULTILINE | re.DOTALL,
-    )
     return etl_script
 
 
@@ -65,5 +56,13 @@ def submit_etl_script(
     if client.file_exists(etl_script_destination):
         client.delete_file(etl_script_destination)
     client.upload_file(etl_script, etl_script_destination)
-    job_id = client.submit_python_task(experiment.slug, cluster_slug, etl_script_destination)
+    params = ["--slug", experiment.slug]
+    for branch in experiment.branches:
+        params.extend(["--branch", branch])
+    job_id = client.submit_python_task(
+        experiment.slug,
+        cluster_slug,
+        etl_script_destination,
+        params
+    )
     return job_id
