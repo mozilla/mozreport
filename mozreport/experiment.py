@@ -40,7 +40,7 @@ class ExperimentConfig:
 
 
 def generate_etl_script(experiment_config):
-    etl_script_path = Path(__file__).parent/"etl_script.py"
+    etl_script_path = Path(__file__).parent/"etl_template"/"etl_script.py"
     etl_script = etl_script_path.read_text()
     return etl_script
 
