@@ -2,7 +2,10 @@
 
 import re
 import os
+import shutil
+import sqlite3
 import sys
+import tempfile
 
 import click
 
@@ -18,6 +21,7 @@ def name_to_stub(name):
 def run_etl(slug, branches, enrollment_end, output_path):
     from mozanalysis import metrics
     from mozanalysis.experiments import ExperimentAnalysis
+    from pyspark.sql import functions as f
 
     blessed_metrics = [
       metrics.EngagementAvgDailyHours,
@@ -32,9 +36,45 @@ def run_etl(slug, branches, enrollment_end, output_path):
         my_experiment = my_experiment.filter(my_experiment.submission_date_s3 > enrollment_end)
     summary = ExperimentAnalysis(my_experiment).metrics(*blessed_metrics).run()
 
+    facets = [
+        "client_id",
+        "experiment_branch",
+        "normalized_channel",
+    ]
+
+    columns_to_average = [
+        "subsession_length",
+        "active_ticks",
+        "scalar_parent_browser_engagement_total_uri_count",
+    ]
+
+    per_user_daily_averages = (
+        my_experiment
+        .groupBy(*facets, "submission_date_s3")
+        .agg(
+            *[f.sum(c).alias(c) for c in columns_to_average]
+        )
+        .groupBy(*facets)
+        .agg(
+            f.count("*").alias("days_active"),
+            *[f.avg(c).alias(c) for c in columns_to_average],
+        )
+        .toPandas()
+    )
+
+    temp_db_file = tempfile.NamedTemporaryFile(delete=False)
+    temp_db_path = temp_db_file.name
+    temp_db_file.close()
+    conn = sqlite3.connect(temp_db_path)
+    summary.to_sql("summary", conn, index=False)
+    per_user_daily_averages.to_sql("per_user_daily_averages", conn, index=False)
+    conn.close()
+
     if not os.path.exists(os.path.dirname(output_path)):
         os.makedirs(os.path.dirname(output_path))
-    analysis.to_csv(output_path, index=False)
+    if os.path.exists(output_path):
+        os.remove(output_path)
+    shutil.copy(src=temp_db_path, dst=output_path)
 
 
 @click.command()
@@ -50,7 +90,7 @@ def cli(slug, uuid, branches, enrollment_end, test):
         "dbfs",
         "mozreport",
         "%s-%s" % (safe_slug, uuid),
-        "summary.csv"
+        "summary.sqlite3"
     )
     if test:
         print("Slug:", slug)
@@ -63,3 +103,4 @@ def cli(slug, uuid, branches, enrollment_end, test):
 
 if __name__ == "__main__":
     cli()
+    sys.exit(0)

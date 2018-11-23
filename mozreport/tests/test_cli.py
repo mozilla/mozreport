@@ -88,7 +88,7 @@ class TestCli:
         with runner.isolated_filesystem() as tmpdir:
             write_config_files()
             result = runner.invoke(cli.cli, ["fetch"], env={"MOZREPORT_CONFIG": tmpdir})
-            with open("summary.csv", "rb") as f:
+            with open("summary.sqlite3", "rb") as f:
                 assert f.read() == response
         assert result.exit_code == 0
 
