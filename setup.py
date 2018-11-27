@@ -19,7 +19,7 @@ setup(
     description="CLI for generating experiment reports",
     author="Tim D. Smith",
     author_email="tdsmith@mozilla.com",
-    url="https://github.com/tdsmith/mozreport",
+    url="https://github.com/mozilla/mozreport",
     packages=["mozreport", "mozreport.tests"],
     package_data={
         "mozreport": [
