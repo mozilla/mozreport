@@ -24,6 +24,7 @@ setup(
     package_data={
         "mozreport": [
             "templates/**/*",
+            "etl_template/*",
         ],
     },
     setup_requires=["incremental"],

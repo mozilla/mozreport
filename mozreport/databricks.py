@@ -1,6 +1,7 @@
 from base64 import b64decode
 from typing.io import IO
 from urllib.parse import urljoin
+from typing import Optional, List
 
 import attr
 from requests import Session
@@ -84,7 +85,8 @@ class Client:
         self,
         run_name: str,
         existing_cluster_id: str,
-        remote_path: str
+        remote_path: str,
+        parameters: Optional[List[str]] = None,
     ) -> int:
         url = urljoin(self.config.host, "/api/2.0/jobs/runs/submit")
         job_definition = {
@@ -92,7 +94,7 @@ class Client:
             "existing_cluster_id": existing_cluster_id,
             "spark_python_task": {
                 "python_file": "dbfs:" + remote_path,
-                "parameters": [],
+                "parameters": parameters or [],
             }
         }
         response = self._requests.post(

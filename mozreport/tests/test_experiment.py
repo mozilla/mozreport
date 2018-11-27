@@ -34,8 +34,7 @@ class TestExperimentConfig:
         filename = Path(tmpdir.join("foo", "bar", "config.toml"))
         config.save(filename)
 
-    def test_config_injection(self, config):
+    def test_generated_script(self, config):
         generated = generate_etl_script(config)
-        assert "experiment-uuid" in generated
         # Test that the generated code doesn't throw a syntax error
         compile(generated, "<string>", mode="exec")
