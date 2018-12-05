@@ -30,6 +30,7 @@ def run_etl(slug, enrollment_end, output_path):
       metrics.EngagementIntensity,
     ]
 
+    spark.conf.set("spark.databricks.queryWatchdog.enabled", False)  # noqa
     experiments = spark.table("experiments")  # noqa
     my_experiment = experiments.filter(experiments.experiment_id == slug)
     if enrollment_end:
