@@ -1,20 +1,25 @@
 ---
 title: "Report title"
-author: ""
-date: ""
+author: "Your name"
+date: "Today's date"
 output:
   html_document:
     toc: true
+    toc_depth: 2
 ---
 
 ```{r setup, include=FALSE}
 library(dplyr)
 library(ggplot2)
+library(gridExtra)
 library(readr)
+library(RSQLite)
 
-results = read_csv("summary.csv")
+knitr::opts_chunk$set(echo=FALSE, fig.width=10, message=FALSE, warning=FALSE, fig.height=4)
 
-knitr::opts_chunk$set(echo = FALSE)
+conn = DBI::dbConnect(SQLite(), "summary.sqlite3")
+summary = tbl(conn, "summary") %>% collect
+per_user = tbl(conn, "per_user") %>% collect
 ```
 
 # Executive summary
@@ -50,19 +55,76 @@ Consider rewording the headers to summarize the contents of the section
 ### Total time per user
 
 ```{r total_time_per_user}
+densityplot = ggplot(per_user, aes(subsession_length/3600, color=experiment_branch)) +
+  geom_density() +
+  scale_x_log10() +
+  scale_color_discrete("Branch") +
+  labs(x="Daily session lengths on active days (hours)")
 
+summaryplot = summary %>%
+  filter(metric_name == "engagement_avg_daily_hours", stat_name == "p50") %>%
+  ggplot(aes(branch, stat_value, ymin=ci_low, ymax=ci_high)) +
+    geom_pointrange() +
+    labs(x="Branch", y="Median daily session length")
+
+grid.arrange(densityplot, summaryplot, ncol=2)
 ```
+
+Median daily session length (on days when users used the browser at all).
 
 ### Active time per user
 ```{r active_time_per_user}
+densityplot = ggplot(per_user, aes(active_ticks*5/3600, color=experiment_branch)) +
+  geom_density() +
+  scale_x_log10() +
+  scale_color_discrete("Branch") +
+  labs(x="Daily active time per user on active days (hours)")
 
+summaryplot = summary %>%
+  filter(metric_name == "engagement_avg_daily_active_hours", stat_name == "p50") %>%
+  ggplot(aes(branch, stat_value, ymin=ci_low, ymax=ci_high)) +
+    geom_pointrange() +
+    labs(x="Branch", y="Median daily active time (hours)")
+
+grid.arrange(densityplot, summaryplot, ncol=2)
 ```
+
 
 ### Session intensity
 
+```{r intensity_density}
+densityplot = ggplot(per_user, aes(active_ticks*5/subsession_length, color=experiment_branch)) +
+  geom_density(n=8192) +
+  scale_color_discrete("Branch") +
+  labs(x="Daily intensity on active days (fraction)") +
+  coord_cartesian(xlim=c(0, 1))
 
+summaryplot = summary %>%
+  filter(metric_name == "engagement_intensity", stat_name == "p50") %>%
+  ggplot(aes(branch, stat_value, ymin=ci_low, ymax=ci_high)) +
+    geom_pointrange() +
+    labs(x="Branch", y="Median daily session intensity (fraction)")
+
+grid.arrange(densityplot, summaryplot, ncol=2)
+```
 
 ### URIs visited per active hour
+
+```{r uris_active_hour}
+densityplot = ggplot(per_user, aes(scalar_parent_browser_engagement_total_uri_count/(active_ticks*5/3600), color=experiment_branch)) +
+  geom_density() +
+  scale_color_discrete("Branch") +
+  scale_x_log10() +
+  labs(x="URIs visited per active hour")
+
+summaryplot = summary %>%
+  filter(metric_name == "engagement_uris_per_active_hour", stat_name == "p50") %>%
+  ggplot(aes(branch, stat_value, ymin=ci_low, ymax=ci_high)) +
+    geom_pointrange() +
+    labs(x="Branch", y="URIs visited per active hour")
+
+grid.arrange(densityplot, summaryplot, ncol=2)
+```
 
 ## Retention
 
