@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo=FALSE, fig.width=10, message=FALSE, warning=FALSE, fi
 
 conn = DBI::dbConnect(SQLite(), "summary.sqlite3")
 summary = tbl(conn, "summary") %>% collect
-per_user = tbl(conn, "per_user") %>% collect
+per_user = tbl(conn, "per_user_daily_averages") %>% collect
 ```
 
 # Executive summary
