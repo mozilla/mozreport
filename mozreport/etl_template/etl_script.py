@@ -57,7 +57,7 @@ def run_etl(slug, branches, enrollment_end, output_path):
         .groupBy(*facets)
         .agg(
             f.count("*").alias("days_active"),
-            *[f.avg(c).alias(c) for c in columns_to_average],
+            *[f.avg(c).alias(c) for c in columns_to_average]
         )
         .toPandas()
     )
