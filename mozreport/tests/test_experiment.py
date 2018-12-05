@@ -10,10 +10,6 @@ class TestExperimentConfig:
         return ExperimentConfig(
             uuid="experiment-uuid",
             slug="experiment-slug",
-            branches=[
-                "control",
-                "experimental",
-            ]
         )
 
     def test_writes_tempfile(self, tmpdir, config):

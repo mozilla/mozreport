@@ -1,4 +1,3 @@
-from itertools import chain, repeat
 from pathlib import Path
 import sys
 from typing import Optional, Union
@@ -129,16 +128,6 @@ def build_experiment_config(defaults: Optional[Union[dict, ExperimentConfig]]) -
         type=str,
         default=defaults.get("slug", None)
     )
-
-    default_n = len(defaults["branches"]) if "branches" in defaults else 2
-    n_branches = click.prompt("Number of branches", default=default_n)
-
-    branchiter = chain(defaults.get("branches", []), repeat(None))
-    branches = []
-    for i, branchname in zip(range(n_branches), branchiter):
-        branches.append(click.prompt(f"Branch {i+1}", type=str, default=branchname))
-
-    args["branches"] = branches
 
     return cattr.structure(args, ExperimentConfig)
 
