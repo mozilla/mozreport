@@ -51,7 +51,7 @@ def run_etl(slug, enrollment_end, output_path):
 
     per_user_daily_averages = (
         my_experiment
-        .groupBy(*facets, "submission_date_s3")
+        .groupBy("submission_date_s3", *facets)
         .agg(
             *[f.sum(c).alias(c) for c in columns_to_average]
         )
