@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import attr
 import cattr
@@ -13,7 +13,6 @@ from .util import name_to_stub
 class ExperimentConfig:
     uuid: str = attr.ib()
     slug: str = attr.ib()
-    branches: List[str] = attr.ib()
 
     @staticmethod
     def _default_config_path():
@@ -57,8 +56,6 @@ def submit_etl_script(
         client.delete_file(etl_script_destination)
     client.upload_file(etl_script, etl_script_destination)
     params = ["--slug", experiment.slug, "--uuid", experiment.uuid]
-    for branch in experiment.branches:
-        params.extend(["--branch", branch])
     job_id = client.submit_python_task(
         experiment.slug,
         cluster_slug,

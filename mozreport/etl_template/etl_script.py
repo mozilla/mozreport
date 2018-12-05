@@ -18,7 +18,7 @@ def name_to_stub(name):
     return re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_").lower()
 
 
-def run_etl(slug, branches, enrollment_end, output_path):
+def run_etl(slug, enrollment_end, output_path):
     from mozanalysis import metrics
     from mozanalysis.experiments import ExperimentAnalysis
     from pyspark.sql import functions as f
@@ -78,12 +78,11 @@ def run_etl(slug, branches, enrollment_end, output_path):
 
 
 @click.command()
-@click.option("--branch", "branches", multiple=True, required=True, type=str)
 @click.option("--slug", required=True, type=str)
 @click.option("--uuid", required=True, type=str)
 @click.option("--enrollment-end", type=str)
 @click.option("--test", is_flag=True)
-def cli(slug, uuid, branches, enrollment_end, test):
+def cli(slug, uuid, enrollment_end, test):
     safe_slug = name_to_stub(slug)
     output_path = os.path.join(
         "/",
@@ -95,10 +94,9 @@ def cli(slug, uuid, branches, enrollment_end, test):
     if test:
         print("Slug:", slug)
         print("Last day of enrollment period:", enrollment_end)
-        print("Branches:", branches)
         print("Output path:", output_path)
         sys.exit(0)
-    run_etl(slug, branches, enrollment_end, output_path)
+    run_etl(slug, enrollment_end, output_path)
 
 
 if __name__ == "__main__":

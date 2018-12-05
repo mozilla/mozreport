@@ -12,7 +12,7 @@ from mozreport.experiment import ExperimentConfig
 def write_config_files():
     databricks = DatabricksConfig(host="foo", token="bar")
     cliconfig = cli.CliConfig(default_template="rmarkdown", databricks=databricks)
-    experiment = ExperimentConfig(uuid="monty", slug="camelot", branches=["spam", "eggs"])
+    experiment = ExperimentConfig(uuid="monty", slug="camelot")
     cliconfig.save(Path("config.toml"))
     experiment.save()
 
