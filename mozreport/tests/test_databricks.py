@@ -46,6 +46,7 @@ class TestDatabricksIntegration:
         test_script = dedent("""\
             import sys
             output_path = sys.argv[1]
+            spark.conf.set("spark.databricks.queryWatchdog.enabled", False)
             colnames = spark.table("main_summary").columns
             with open(output_path, "w") as f:
                 f.write(repr(colnames))
