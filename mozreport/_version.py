@@ -7,5 +7,5 @@ Provides mozreport version information.
 
 from incremental import Version
 
-__version__ = Version('mozreport', 18, 11, 0, dev=0)
+__version__ = Version('mozreport', 18, 12, 0)
 __all__ = ["__version__"]
