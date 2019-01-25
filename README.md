@@ -3,6 +3,16 @@
 mozreport is a CLI tool that intends to help streamline
 the process of preparing an experiment report.
 
+## Installing mozreport
+
+Homebrew users can install mozreport with
+`brew install mozilla/mozreport/mozreport`.
+
+You can also install mozreport using `pip3 install mozreport`.
+(You might consider using [pipsi](https://github.com/mitsuhiko/pipsi).)
+
+Mozreport requires Python 3.6+.
+
 ## Using mozreport
 
 ```
