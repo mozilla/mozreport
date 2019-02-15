@@ -101,5 +101,4 @@ def cli(slug, uuid, enrollment_end, test):
 
 
 if __name__ == "__main__":
-    cli()
-    sys.exit(0)
+    cli(standalone_mode=False)
