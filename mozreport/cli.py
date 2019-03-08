@@ -1,3 +1,4 @@
+from enum import Enum
 from functools import partial
 import os
 from pathlib import Path
@@ -19,10 +20,18 @@ from .util import get_data_dir
 
 
 Spinner = partial(Halo, enabled="MOZREPORT_TESTING" not in os.environ)
+Pipeline = Enum("Pipeline", "always never prompt")
 
 
-def cli():
-    pass
+@click.option(
+    "--pipeline",
+    type=click.Choice(Pipeline.__members__.keys()),
+    default="prompt"
+)
+@click.pass_context
+def cli(ctx, pipeline):
+    ctx.ensure_object(dict)
+    ctx.obj["pipeline"] = Pipeline[pipeline]
 
 
 cli.__doc__ = f"""
@@ -198,10 +207,13 @@ def new(ctx):
     with open("mozreport_etl_script.py", "w") as f:
         f.write(script)
 
-    if click.confirm(
-            "Would you like to submit the default script to shared_serverless now?",
-            default=True,
-            ):
+    pipeline = ctx.obj["pipeline"]
+    prompt = partial(
+        click.confirm,
+        "Would you like to submit the default script to shared_serverless now?",
+        default=True,
+    )
+    if pipeline == Pipeline.always or (pipeline == Pipeline.prompt and prompt()):
         ctx.invoke(submit)
     else:
         click.echo(
@@ -228,7 +240,8 @@ def new(ctx):
     ),
 )
 @click.argument("filename", default="mozreport_etl_script.py", type=click.Path(exists=True))
-def submit(cluster_slug, wait, filename):
+@click.pass_context
+def submit(ctx, cluster_slug, wait, filename):
     """Run a Python script on Databricks.
 
     FILENAME: The name of the file to upload and run. Defaults to mozreport_etl_script.py.
@@ -261,8 +274,19 @@ def submit(cluster_slug, wait, filename):
             state = status["state"]["life_cycle_state"]
         if status["state"]["result_state"] == "FAILED":
             spinner.fail()
+            return
         else:
             spinner.succeed()
+    pipeline = ctx.obj["pipeline"]
+    if pipeline == Pipeline.never:
+        return
+    prompt = partial(
+        click.confirm,
+        "Would you like to download the result? This will overwrite any existing local result.",
+        default=True,
+    )
+    if pipeline == Pipeline.always or prompt():
+        ctx.invoke(fetch)
 
 
 @cli.command()
