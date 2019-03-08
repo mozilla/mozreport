@@ -181,7 +181,8 @@ def setup():
 
 
 @cli.command()
-def new():
+@click.pass_context
+def new(ctx):
     """Begin a new experiment analysis.
     """
     experiment_config = None
@@ -196,6 +197,17 @@ def new():
     script = generate_etl_script(experiment_config)
     with open("mozreport_etl_script.py", "w") as f:
         f.write(script)
+
+    if click.confirm(
+            "Would you like to submit the default script to shared_serverless now?",
+            default=True,
+            ):
+        ctx.invoke(submit)
+    else:
+        click.echo(
+            "You can edit `mozreport_etl_script.py` to customize the analysis, "
+            "and then run `mozreport submit` whenever you're ready to continue."
+        )
 
 
 @cli.command()
