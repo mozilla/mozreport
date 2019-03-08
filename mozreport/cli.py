@@ -105,12 +105,11 @@ def build_cli_config(defaults: Optional[Union[dict, CliConfig]] = None) -> CliCo
         "host": click.prompt("Databricks URL", default=defaults["databricks"]["host"]),
     }
 
-    if not defaults["databricks"]["token"]:
-        click.echo(
-            f"You can create a Databricks access token by navigating to "
-            f'{args["databricks"]["host"]}/#setting/account, selecting "Access Tokens", '
-            f'and "Generate New Token."'
-        )
+    click.echo(
+        f"You can create a Databricks access token by navigating to "
+        f'{args["databricks"]["host"]}/#setting/account, selecting "Access Tokens", '
+        f'and "Generate New Token."'
+    )
 
     args["databricks"]["token"] = click.prompt(
             "Databricks token",
