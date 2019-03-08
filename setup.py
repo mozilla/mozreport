@@ -33,6 +33,7 @@ setup(
         "attrs",
         "cattrs",
         "click",
+        "halo",
         "incremental",
         "requests",
         "toml"

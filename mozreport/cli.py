@@ -1,17 +1,24 @@
+from functools import partial
+import os
 from pathlib import Path
 import sys
+import time
 from typing import Optional, Union
 import uuid
 
 import attr
 import cattr
 import click
+from halo import Halo
 import toml
 
 from .databricks import DatabricksConfig, Client
 from .experiment import ExperimentConfig, generate_etl_script, submit_etl_script
 from .template import Template
 from .util import get_data_dir
+
+
+Spinner = partial(Halo, enabled="MOZREPORT_TESTING" not in os.environ)
 
 
 def cli():
@@ -196,8 +203,16 @@ def new():
         "Defaults to the slug for shared_serverless."
     ),
 )
+@click.option(
+    "--wait/--no-wait",
+    default=True,
+    help=(
+        "Whether to wait for the Databricks job to finish, or return immediately "
+        "(waits by default)"
+    ),
+)
 @click.argument("filename", default="mozreport_etl_script.py", type=click.Path(exists=True))
-def submit(cluster_slug, filename):
+def submit(cluster_slug, wait, filename):
     """Run a Python script on Databricks.
 
     FILENAME: The name of the file to upload and run. Defaults to mozreport_etl_script.py.
@@ -207,15 +222,31 @@ def submit(cluster_slug, filename):
     client = Client(config.databricks)
     with open(filename, "r") as f:
         script = f.read()
-    run_id = submit_etl_script(
-        script,
-        experiment,
-        client,
-        cluster_slug,
-    )
-    status = client.run_info(run_id)
+    with Spinner(text="Submitting job to Databricks") as spinner:
+        run_id = submit_etl_script(
+            script,
+            experiment,
+            client,
+            cluster_slug,
+        )
+        spinner.succeed()
+    with Spinner(text="Getting status URL") as spinner:
+        status = client.run_info(run_id)
+        spinner.succeed()
     url = status["run_page_url"]
     click.echo("Submitted. Job status: " + url)
+    if not wait:
+        return
+    with Spinner(text="Waiting for completion") as spinner:
+        state = None
+        while state != "TERMINATED":
+            time.sleep(5)
+            status = client.run_info(run_id)
+            state = status["state"]["life_cycle_state"]
+        if status["state"]["result_state"] == "FAILED":
+            spinner.fail()
+        else:
+            spinner.succeed()
 
 
 @cli.command()
@@ -226,7 +257,9 @@ def fetch():
     experiment = get_experiment_config_or_die()
     client = Client(config.databricks)
     remote_filename = experiment.dbfs_working_path + "/summary.sqlite3"
-    summary = client.get_file(remote_filename)
+    with Spinner(text=f"Downloading file dbfs:{remote_filename}") as spinner:
+        summary = client.get_file(remote_filename)
+        spinner.succeed()
     with open("summary.sqlite3", "wb") as f:
         f.write(summary)
 
