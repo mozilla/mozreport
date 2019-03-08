@@ -67,6 +67,13 @@ class TestCli:
     def test_submit(self, runner, monkeypatch):
         mock_client = create_autospec(Client)
         mock_client.return_value.submit_python_task.return_value = 1234
+        mock_client.return_value.run_info.return_value = {
+            "state": {
+                "life_cycle_state": "TERMINATED",
+                "result_state": "SUCCESS",
+            },
+            "run_page_url": "https://example.com",
+        }
         monkeypatch.setattr(cli, "Client", mock_client)
 
         result = runner.invoke(cli.cli, ["submit", "--help"])
