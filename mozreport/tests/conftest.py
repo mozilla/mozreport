@@ -1,7 +1,10 @@
 from functools import partial
+import os
 
 from click.testing import CliRunner
 import pytest
+
+os.environ["MOZREPORT_TESTING"] = "1"
 
 
 @pytest.fixture

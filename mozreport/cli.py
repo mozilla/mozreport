@@ -1,3 +1,5 @@
+from functools import partial
+import os
 from pathlib import Path
 import sys
 import time
@@ -14,6 +16,9 @@ from .databricks import DatabricksConfig, Client
 from .experiment import ExperimentConfig, generate_etl_script, submit_etl_script
 from .template import Template
 from .util import get_data_dir
+
+
+Spinner = partial(Halo, enabled="MOZREPORT_TESTING" not in os.environ)
 
 
 def cli():
@@ -217,7 +222,7 @@ def submit(cluster_slug, wait, filename):
     client = Client(config.databricks)
     with open(filename, "r") as f:
         script = f.read()
-    with Halo(text="Submitting job to Databricks") as spinner:
+    with Spinner(text="Submitting job to Databricks") as spinner:
         run_id = submit_etl_script(
             script,
             experiment,
@@ -225,14 +230,14 @@ def submit(cluster_slug, wait, filename):
             cluster_slug,
         )
         spinner.succeed()
-    with Halo(text="Getting status URL") as spinner:
+    with Spinner(text="Getting status URL") as spinner:
         status = client.run_info(run_id)
         spinner.succeed()
     url = status["run_page_url"]
     click.echo("Submitted. Job status: " + url)
     if not wait:
         return
-    with Halo(text="Waiting for completion") as spinner:
+    with Spinner(text="Waiting for completion") as spinner:
         state = None
         while state != "TERMINATED":
             time.sleep(5)
@@ -252,7 +257,7 @@ def fetch():
     experiment = get_experiment_config_or_die()
     client = Client(config.databricks)
     remote_filename = experiment.dbfs_working_path + "/summary.sqlite3"
-    with Halo(text=f"Downloading file dbfs:{remote_filename}") as spinner:
+    with Spinner(text=f"Downloading file dbfs:{remote_filename}") as spinner:
         summary = client.get_file(remote_filename)
         spinner.succeed()
     with open("summary.sqlite3", "wb") as f:
