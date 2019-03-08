@@ -252,7 +252,9 @@ def fetch():
     experiment = get_experiment_config_or_die()
     client = Client(config.databricks)
     remote_filename = experiment.dbfs_working_path + "/summary.sqlite3"
-    summary = client.get_file(remote_filename)
+    with Halo(text=f"Downloading file dbfs:{remote_filename}") as spinner:
+        summary = client.get_file(remote_filename)
+        spinner.succeed()
     with open("summary.sqlite3", "wb") as f:
         f.write(summary)
 
