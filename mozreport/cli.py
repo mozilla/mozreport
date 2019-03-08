@@ -1,11 +1,13 @@
 from pathlib import Path
 import sys
+import time
 from typing import Optional, Union
 import uuid
 
 import attr
 import cattr
 import click
+from halo import Halo
 import toml
 
 from .databricks import DatabricksConfig, Client
@@ -196,8 +198,16 @@ def new():
         "Defaults to the slug for shared_serverless."
     ),
 )
+@click.option(
+    "--wait/--no-wait",
+    default=True,
+    help=(
+        "Whether to wait for the Databricks job to finish, or return immediately "
+        "(waits by default)"
+    ),
+)
 @click.argument("filename", default="mozreport_etl_script.py", type=click.Path(exists=True))
-def submit(cluster_slug, filename):
+def submit(cluster_slug, wait, filename):
     """Run a Python script on Databricks.
 
     FILENAME: The name of the file to upload and run. Defaults to mozreport_etl_script.py.
@@ -207,15 +217,31 @@ def submit(cluster_slug, filename):
     client = Client(config.databricks)
     with open(filename, "r") as f:
         script = f.read()
-    run_id = submit_etl_script(
-        script,
-        experiment,
-        client,
-        cluster_slug,
-    )
-    status = client.run_info(run_id)
+    with Halo(text="Submitting job to Databricks") as spinner:
+        run_id = submit_etl_script(
+            script,
+            experiment,
+            client,
+            cluster_slug,
+        )
+        spinner.succeed()
+    with Halo(text="Getting status URL") as spinner:
+        status = client.run_info(run_id)
+        spinner.succeed()
     url = status["run_page_url"]
     click.echo("Submitted. Job status: " + url)
+    if not wait:
+        return
+    with Halo(text="Waiting for completion") as spinner:
+        state = None
+        while state != "TERMINATED":
+            time.sleep(5)
+            status = client.run_info(run_id)
+            state = status["state"]["life_cycle_state"]
+        if status["state"]["result_state"] == "FAILED":
+            spinner.fail()
+        else:
+            spinner.succeed()
 
 
 @cli.command()
