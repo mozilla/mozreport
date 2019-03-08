@@ -43,7 +43,12 @@ cli.__doc__ = f"""
     \b
     The local configuration directory is {get_data_dir()}.
 """
-cli = click.group()(cli)
+cli = click.group(
+        context_settings={
+            "help_option_names": ["-h", "--help"],
+            "max_content_width": 120,
+        },
+    )(cli)
 
 
 @attr.s()
