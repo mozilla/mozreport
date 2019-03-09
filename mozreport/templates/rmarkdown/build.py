@@ -2,13 +2,16 @@
 import subprocess
 
 
+def R(script):
+    return subprocess.check_call(["R", "--slave", "-e", script])
+
+
 def build():
-    subprocess.check_call([
-        "R",
-        "--slave",
-        "-e",
-        "rmarkdown::render('report.Rmd')"
-    ])
+    R(
+        'if(!("RSQLite" %in% .packages(all=TRUE))) '
+        'install.packages("RSQLite", repo="https://cloud.r-project.org")'
+    )
+    R("rmarkdown::render('report.Rmd')")
 
 
 if __name__ == "__main__":
