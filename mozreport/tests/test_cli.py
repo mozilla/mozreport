@@ -49,7 +49,7 @@ class TestCli:
 
             result = runner.invoke(
                 cli.cli,
-                ["new"],
+                ["--pipeline=never", "new"],
                 input=input,
             )
             assert result.exit_code == 0
@@ -58,7 +58,7 @@ class TestCli:
 
             result2 = runner.invoke(
                 cli.cli,
-                ["new"],
+                ["--pipeline=never", "new"],
                 input=input2,
             )
             assert result2.exit_code == 0
@@ -83,7 +83,11 @@ class TestCli:
             write_config_files()
             with open("mozreport_etl_script.py", "x") as f:
                 f.write("dummy file")
-            result = runner.invoke(cli.cli, ["submit"], env={"MOZREPORT_CONFIG": tmpdir})
+            result = runner.invoke(
+                cli.cli,
+                ["--pipeline=never", "submit"],
+                env={"MOZREPORT_CONFIG": tmpdir}
+            )
         assert result.exit_code == 0
 
     def test_fetch(self, runner, monkeypatch):
