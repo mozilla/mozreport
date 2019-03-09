@@ -118,6 +118,34 @@ class TestCli:
                 assert f.read() == response
         assert result.exit_code == 0
 
+    def test_pipeline_prompt_yes(self, runner, mock_client):
+        input = "\n" * 100
+        response = mock_client.return_value.get_file.return_value
+        with runner.isolated_filesystem() as tmpdir:
+            write_config_files()
+            result = runner.invoke(
+                cli.cli,
+                ["--pipeline=prompt", "new"],
+                env={"MOZREPORT_CONFIG": tmpdir},
+                input=input,
+            )
+            with open("summary.sqlite3", "rb") as f:
+                assert f.read() == response
+        assert result.exit_code == 0
+
+    def test_pipeline_prompt_no(self, runner, mock_client):
+        input = "n\n" * 100
+        with runner.isolated_filesystem() as tmpdir:
+            write_config_files()
+            result = runner.invoke(
+                cli.cli,
+                ["--pipeline=prompt", "new"],
+                env={"MOZREPORT_CONFIG": tmpdir},
+                input=input,
+            )
+            assert not (Path(tmpdir)/"summary.sqlite3").exists()
+        assert result.exit_code == 0
+
     def test_report(self, runner):
         with runner.isolated_filesystem() as tmpdir:
             write_config_files()
