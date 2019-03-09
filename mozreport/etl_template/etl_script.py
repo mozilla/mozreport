@@ -7,7 +7,9 @@ import sqlite3
 import sys
 import tempfile
 
-import click
+dbutils.library.installPyPI("click")  # noqa:F821 unknown name dbutils
+
+import click  # noqa:E402 import not at top of file
 
 
 def name_to_stub(name):
