@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import subprocess
 
+
 def R(script):
     return subprocess.check_call(["R", "--slave", "-e", script])
+
 
 def build():
     R(
