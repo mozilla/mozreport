@@ -1,3 +1,4 @@
+from enum import Enum
 from functools import partial
 import os
 from pathlib import Path
@@ -19,10 +20,18 @@ from .util import get_data_dir
 
 
 Spinner = partial(Halo, enabled="MOZREPORT_TESTING" not in os.environ)
+Pipeline = Enum("Pipeline", "always never prompt")
 
 
-def cli():
-    pass
+@click.option(
+    "--pipeline",
+    type=click.Choice(Pipeline.__members__.keys()),
+    default="prompt"
+)
+@click.pass_context
+def cli(ctx, pipeline):
+    ctx.ensure_object(dict)
+    ctx.obj["pipeline"] = Pipeline[pipeline]
 
 
 cli.__doc__ = f"""
@@ -43,7 +52,12 @@ cli.__doc__ = f"""
     \b
     The local configuration directory is {get_data_dir()}.
 """
-cli = click.group()(cli)
+cli = click.group(
+        context_settings={
+            "help_option_names": ["-h", "--help"],
+            "max_content_width": 120,
+        },
+    )(cli)
 
 
 @attr.s()
@@ -176,7 +190,8 @@ def setup():
 
 
 @cli.command()
-def new():
+@click.pass_context
+def new(ctx):
     """Begin a new experiment analysis.
     """
     experiment_config = None
@@ -191,6 +206,20 @@ def new():
     script = generate_etl_script(experiment_config)
     with open("mozreport_etl_script.py", "w") as f:
         f.write(script)
+
+    pipeline = ctx.obj["pipeline"]
+    prompt = partial(
+        click.confirm,
+        "Would you like to submit the default script to shared_serverless now?",
+        default=True,
+    )
+    if pipeline == Pipeline.always or (pipeline == Pipeline.prompt and prompt()):
+        ctx.invoke(submit)
+    else:
+        click.echo(
+            "You can edit `mozreport_etl_script.py` to customize the analysis, "
+            "and then run `mozreport submit` whenever you're ready to continue."
+        )
 
 
 @cli.command()
@@ -211,7 +240,8 @@ def new():
     ),
 )
 @click.argument("filename", default="mozreport_etl_script.py", type=click.Path(exists=True))
-def submit(cluster_slug, wait, filename):
+@click.pass_context
+def submit(ctx, cluster_slug, wait, filename):
     """Run a Python script on Databricks.
 
     FILENAME: The name of the file to upload and run. Defaults to mozreport_etl_script.py.
@@ -237,15 +267,26 @@ def submit(cluster_slug, wait, filename):
     if not wait:
         return
     with Spinner(text="Waiting for completion") as spinner:
-        state = None
+        state = status["state"]["life_cycle_state"]
         while state != "TERMINATED":
             time.sleep(5)
             status = client.run_info(run_id)
             state = status["state"]["life_cycle_state"]
         if status["state"]["result_state"] == "FAILED":
             spinner.fail()
+            return
         else:
             spinner.succeed()
+    pipeline = ctx.obj["pipeline"]
+    if pipeline == Pipeline.never:
+        return
+    prompt = partial(
+        click.confirm,
+        "Would you like to download the result? This will overwrite any existing local result.",
+        default=True,
+    )
+    if pipeline == Pipeline.always or prompt():
+        ctx.invoke(fetch)
 
 
 @cli.command()

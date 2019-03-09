@@ -17,6 +17,23 @@ def write_config_files():
     experiment.save()
 
 
+@pytest.fixture
+def mock_client(monkeypatch):
+    mock_client = create_autospec(Client)
+    mock_client.return_value.submit_python_task.return_value = 1234
+    mock_client.return_value.run_info.return_value = {
+        "state": {
+            "life_cycle_state": "TERMINATED",
+            "result_state": "SUCCESS",
+        },
+        "run_page_url": "https://example.com",
+    }
+    response = b"Hello, world! " + "🌎".encode("utf-8")
+    mock_client.return_value.get_file.return_value = response
+    monkeypatch.setattr(cli, "Client", mock_client)
+    yield mock_client
+
+
 class TestCli:
     def test_invoke_without_args_prints_help(self, runner):
         result = runner.invoke(cli.cli)
@@ -49,7 +66,7 @@ class TestCli:
 
             result = runner.invoke(
                 cli.cli,
-                ["new"],
+                ["--pipeline=never", "new"],
                 input=input,
             )
             assert result.exit_code == 0
@@ -58,24 +75,13 @@ class TestCli:
 
             result2 = runner.invoke(
                 cli.cli,
-                ["new"],
+                ["--pipeline=never", "new"],
                 input=input2,
             )
             assert result2.exit_code == 0
             assert contents == outfile.read_bytes()
 
-    def test_submit(self, runner, monkeypatch):
-        mock_client = create_autospec(Client)
-        mock_client.return_value.submit_python_task.return_value = 1234
-        mock_client.return_value.run_info.return_value = {
-            "state": {
-                "life_cycle_state": "TERMINATED",
-                "result_state": "SUCCESS",
-            },
-            "run_page_url": "https://example.com",
-        }
-        monkeypatch.setattr(cli, "Client", mock_client)
-
+    def test_submit(self, runner, mock_client):
         result = runner.invoke(cli.cli, ["submit", "--help"])
         assert result.exit_code == 0
 
@@ -83,20 +89,61 @@ class TestCli:
             write_config_files()
             with open("mozreport_etl_script.py", "x") as f:
                 f.write("dummy file")
-            result = runner.invoke(cli.cli, ["submit"], env={"MOZREPORT_CONFIG": tmpdir})
+            result = runner.invoke(
+                cli.cli,
+                ["--pipeline=never", "submit"],
+                env={"MOZREPORT_CONFIG": tmpdir}
+            )
         assert result.exit_code == 0
 
-    def test_fetch(self, runner, monkeypatch):
-        response = b"Hello, world! " + "🌎".encode("utf-8")
-        mock_client = create_autospec(Client)
-        mock_client.return_value.get_file.return_value = response
-        monkeypatch.setattr(cli, "Client", mock_client)
-
+    def test_fetch(self, runner, mock_client):
+        response = mock_client.return_value.get_file.return_value
         with runner.isolated_filesystem() as tmpdir:
             write_config_files()
             result = runner.invoke(cli.cli, ["fetch"], env={"MOZREPORT_CONFIG": tmpdir})
             with open("summary.sqlite3", "rb") as f:
                 assert f.read() == response
+        assert result.exit_code == 0
+
+    def test_pipelining(self, runner, mock_client):
+        response = mock_client.return_value.get_file.return_value
+        with runner.isolated_filesystem() as tmpdir:
+            write_config_files()
+            result = runner.invoke(
+                cli.cli,
+                ["--pipeline=always", "new"],
+                env={"MOZREPORT_CONFIG": tmpdir}
+            )
+            with open("summary.sqlite3", "rb") as f:
+                assert f.read() == response
+        assert result.exit_code == 0
+
+    def test_pipeline_prompt_yes(self, runner, mock_client):
+        input = "\n" * 100
+        response = mock_client.return_value.get_file.return_value
+        with runner.isolated_filesystem() as tmpdir:
+            write_config_files()
+            result = runner.invoke(
+                cli.cli,
+                ["--pipeline=prompt", "new"],
+                env={"MOZREPORT_CONFIG": tmpdir},
+                input=input,
+            )
+            with open("summary.sqlite3", "rb") as f:
+                assert f.read() == response
+        assert result.exit_code == 0
+
+    def test_pipeline_prompt_no(self, runner, mock_client):
+        input = "n\n" * 100
+        with runner.isolated_filesystem() as tmpdir:
+            write_config_files()
+            result = runner.invoke(
+                cli.cli,
+                ["--pipeline=prompt", "new"],
+                env={"MOZREPORT_CONFIG": tmpdir},
+                input=input,
+            )
+            assert not (Path(tmpdir)/"summary.sqlite3").exists()
         assert result.exit_code == 0
 
     def test_report(self, runner):
