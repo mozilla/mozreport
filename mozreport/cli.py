@@ -267,7 +267,7 @@ def submit(ctx, cluster_slug, wait, filename):
     if not wait:
         return
     with Spinner(text="Waiting for completion") as spinner:
-        state = None
+        state = status["state"]["life_cycle_state"]
         while state != "TERMINATED":
             time.sleep(5)
             status = client.run_info(run_id)
