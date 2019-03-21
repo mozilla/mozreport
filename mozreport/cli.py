@@ -291,7 +291,7 @@ def submit(ctx, cluster_slug, wait, filename):
 
 @cli.command()
 def fetch():
-    """Fetch a summary.csv file from Databricks.
+    """Fetch a summary.sqlite3 file from Databricks.
     """
     config = get_cli_config_or_die()
     experiment = get_experiment_config_or_die()
