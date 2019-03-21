@@ -40,7 +40,7 @@ Usage: mozreport [OPTIONS] COMMAND [ARGS]...
 
 ## What's a template?
 
-A report template is any collection of code that operates on a file named `summary.csv`
+A report template is any collection of code that operates on a file named `summary.sqlite3`
 in the current working directory,
 and renders a report.
 To add a template,
